@@ -1,0 +1,37 @@
+{
+  "timeZone": "Europe/Kyiv",
+  "dependencies": {
+    "libraries": [{
+      "userSymbol": "OAuth2",
+      "libraryId": "1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF",
+      "version": "43"
+    }, {
+      "userSymbol": "FuelFinanceLibrary1",
+      "libraryId": "1XgUeeSzmKN7cKfRy_IXQQ_EmqyS1d9lVoNaq7uKXZJK4WNX8Bl_v0JoJ",
+      "version": "19"
+    }]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "oauthScopes": ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/script.container.ui", "https://www.googleapis.com/auth/script.external_request", "https://www.googleapis.com/auth/script.projects"],
+  "runtimeVersion": "V8",
+  "sheets": {
+    "macros": [{
+      "menuName": "Untitled Macro",
+      "functionName": "UntitledMacro"
+    }, {
+      "menuName": "onEdit_int",
+      "functionName": "onEdit_int"
+    }, {
+      "menuName": "getData",
+      "functionName": "getData"
+    }, {
+      "menuName": "drillDown",
+      "functionName": "drillDown",
+      "defaultShortcut": "Ctrl+Alt+Shift+1"
+    }, {
+      "menuName": "drillDownLocal",
+      "functionName": "drillDownLocal",
+      "defaultShortcut": "Ctrl+Alt+Shift+2"
+    }]
+  }
+}
