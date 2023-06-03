@@ -15,16 +15,14 @@ const subjectEmail = JSON.parse(PropertiesService.getScriptProperties().setPrope
 function drillDown() {
 
   const ui = SpreadsheetApp.getUi()
-  if (!databaseID || !databaseRange) {
-
-    ui.alert("⛔ Database URL or/and Transactions range is not provided", " ", ui.ButtonSet.OK)
-
-  }
-
-  else {
+  if (databaseID && databaseRange) {
     const htmlServ = HtmlService.createTemplateFromFile("dataTable").evaluate().addMetaTag("viewport", "width=device-width, initial-scale=1")
       .setWidth(5000).setHeight(5000)
     ui.showModalDialog(htmlServ, ' ')
+  }
+
+  else {
+    ui.alert("⛔ Database URL or/and Transactions range is not provided", " ", ui.ButtonSet.OK)
   }
 }
 
