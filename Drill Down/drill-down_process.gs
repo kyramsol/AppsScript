@@ -2,8 +2,9 @@
  * Global variables
  */
 
-const databaseID = String(SpreadsheetApp.getActiveSpreadsheet().getRange("Drill-Down Settings!B2").getValue()).match(/[-\w]{25,}/);
-const databaseRange = SpreadsheetApp.getActiveSpreadsheet().getRange("Drill-Down Settings!B3").getValue();
+const databaseURL = SpreadsheetApp.getActiveSpreadsheet().getRange("Drill-Down Settings!B2").getValue(); // with sheet ID and spreadsheet ID
+const databaseRange = SpreadsheetApp.getActiveSpreadsheet().getRange("Drill-Down Settings!B3").getValue(); // a1 notation
+const subjectEmail = JSON.parse(PropertiesService.getScriptProperties().setProperty("SUBJECT_EMAIL")) || "" // fuelfinance mail account that has an access for the database (manager or analyst) 
 
 /**
  * Function of creating html service using dataTable.html {file} => assigned to the button
@@ -14,16 +15,14 @@ const databaseRange = SpreadsheetApp.getActiveSpreadsheet().getRange("Drill-Down
 function drillDown() {
 
   const ui = SpreadsheetApp.getUi()
-  if (!!databaseID + !!databaseRange != 2) {
-
-    ui.alert("⛔ Database URL or/and Transactions range is not provided", " ", ui.ButtonSet.OK)
-
-  }
-
-  else {
+  if (databaseID && databaseRange) {
     const htmlServ = HtmlService.createTemplateFromFile("dataTable").evaluate().addMetaTag("viewport", "width=device-width, initial-scale=1")
       .setWidth(5000).setHeight(5000)
     ui.showModalDialog(htmlServ, ' ')
+  }
+
+  else {
+    ui.alert("⛔ Database URL or/and Transactions range is not provided", " ", ui.ButtonSet.OK)
   }
 }
 
@@ -50,17 +49,17 @@ function processing() {
 
   const ui = SpreadsheetApp.getUi()
 
-
+  function toMYFormat_(date) { return `${new Date(Date.parse(date)).getMonth()}-${new Date(Date.parse(date)).getFullYear()}` }
 
 
   // Assigning functions for the filter callback parameter by the Sheet name {sheet}
   const reportsFilters = {
-    "P&L": function (record) { return `${new Date(Date.parse(record[1])).getMonth()}-${new Date(Date.parse(record[1])).getFullYear()}` == `${new Date(Date.parse(month)).getMonth()}-${new Date(Date.parse(month)).getFullYear()}` && record[19] == category },
-    "CF": function (record) { return `${new Date(Date.parse(record[0])).getMonth()}-${new Date(Date.parse(record[0])).getFullYear()}` == `${new Date(Date.parse(month)).getMonth()}-${new Date(Date.parse(month)).getFullYear()}` && record[19] == category },
+    "P&L": function (record) { return toMYFormat_(record[1]) == toMYFormat_(month) && record[19] == category },
+    "CF": function (record) { return toMYFormat_(record[0]) == toMYFormat_(month) && record[19] == category },
     "BS": function (record) {
-      return ((`${new Date(Date.parse(record[0])).getMonth()}-${new Date(Date.parse(record[0])).getFullYear()}` == `${new Date(Date.parse(month)).getMonth()}-${new Date(Date.parse(month)).getFullYear()}` && (record[22] == category || record[23] == category || record[24] == category || record[25] == category))
-        || (`${new Date(Date.parse(record[1])).getMonth()}-${new Date(Date.parse(record[1])).getFullYear()}` == `${new Date(Date.parse(month)).getMonth()}-${new Date(Date.parse(month)).getFullYear()}` && (record[26] == category || record[27] == category || record[28] == category || record[29] == category))
-        || (`${new Date(Date.parse(record[2])).getMonth()}-${new Date(Date.parse(record[2])).getFullYear()}` == `${new Date(Date.parse(month)).getMonth()}-${new Date(Date.parse(month)).getFullYear()}` && (record[27] == category || record[28] == category || record[29] == category || record[30] == category)))
+      return ((toMYFormat_(record[0]) == toMYFormat_(month) && record.slice(22, 26).some(x => x == category))
+        || (toMYFormat_(record[1]) == toMYFormat_(month) && record.slice(26, 30).some(x => x == category))
+        || (toMYFormat_(record[2]) == toMYFormat_(month) && record.slice(30, 34).some(x => x == category)))
     },
   };
 
@@ -68,11 +67,13 @@ function processing() {
   var sheetToCheck = Object.keys(reportsFilters)
 
   // Checking for target active spreadsheets, active range
-  if (sheetToCheck.includes(activeSheetName) && col > 4 && row > 3 && month && category && !!range.getValue()) {
+  if (sheetToCheck.includes(activeSheetName) && col > 4 && row > 3 && month && category && range.getValue()) {
 
 
     // 1. Getting all transactions from the source databaseSheet {sheet}
-    var transactions = getSheetValues(databaseID, databaseRange)
+    // - prepering grid range for the argument of getSheetValues functions
+    var gridRange = FuelFinanceLibraryv2.a1Notation2GridRange(databaseURL, databaseRange)
+    var transactions = FuelFinanceLibraryv2.getSheetValues(subjectEmail, databaseURL, gridRange)
     // 2. Getting headers from the transactions
     var header = transactions.shift()
     // 3. Filtering transactions using reportsFilters object getting function using activeSheetName as a key
@@ -86,10 +87,9 @@ function processing() {
     if (!!transactions.length) {
 
       // 1. Propering transaction data for the htmlservice DataTable displaying 
-      var result = { data: transactions, headers: header.map(head => { return { title: head } }) }
-      // 2. Saving prepared transactions for the htmlservice into cache
-      CacheService.getScriptCache().put('DATA', JSON.stringify(result))
-      // 3. Initiating htmlservice with the DataTable 
+      var result = { data: transactions, headers: header.map(head => { return { title: head } }), sheet: activeSheetName }
+      Logger.log(result.sheet)
+      // 2. Initiating htmlservice with the DataTable 
 
       return result
     }
